@@ -2,30 +2,54 @@
 
 @layer base {
   :root {
-    --background: #fffcf9; /* Very light warm cream */
-    --foreground: #2d1b14; /* Deep chocolate brown */
-    --card: #ffffff;
-    --primary: #f43f5e; /* Vibrant Tomato Red */
-    --primary-foreground: #ffffff;
+    --brand-primary: #F43F5E;    /* Tomato Red */
+    --brand-secondary: #FB923C;  /* Warm Orange */
+    --brand-accent: #6366F1;     /* Indigo */
+    --bg-warm: #FFFBF7;          /* Premium Cream */
+    --text-main: #1C1917;        /* Stone 900 */
+    --text-muted: #78716C;       /* Stone 500 */
   }
 
   body {
-    @apply bg-[#fffcf9] text-[#2d1b14] antialiased selection:bg-orange-100;
+    @apply bg-[#FFFBF7] text-[#1C1917] antialiased selection:bg-rose-100;
     font-family: var(--font-quicksand), sans-serif;
+    scroll-behavior: smooth;
   }
 
-  input::placeholder,
-  textarea::placeholder {
-    @apply text-slate-400 font-medium;
+  /* Custom Scrollbar for Premium Feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-orange-200/50 rounded-full hover:bg-orange-300 transition-colors;
   }
 }
 
 @layer components {
-  .btn-foodie {
-    @apply bg-[#f43f5e] text-white font-bold py-4 px-8 rounded-[24px] shadow-lg shadow-rose-200 hover:bg-[#e11d48] hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 flex items-center justify-center gap-2;
+  /* Ultra-Premium Glass Floating Card */
+  .premium-card {
+    @apply bg-white rounded-[48px] border-[3px] border-white shadow-[0_20px_50px_-20px_rgba(251,146,60,0.15)] hover:shadow-[0_40px_80px_-25px_rgba(251,146,60,0.25)] transition-all duration-500 hover:-translate-y-2;
   }
 
-  .card-foodie {
-    @apply bg-white rounded-[40px] p-6 border-2 border-orange-50 shadow-xl shadow-orange-100/50 hover:shadow-orange-200/50 transition-all duration-500;
+  /* Sophisticated Button Gradient */
+  .btn-premium {
+    @apply bg-gradient-to-br from-[#F43F5E] to-[#FB923C] text-white font-black py-5 px-10 rounded-[30px] shadow-2xl shadow-rose-200 hover:shadow-rose-300 hover:scale-[1.05] active:scale-[0.95] transition-all duration-300 flex items-center justify-center gap-3 tracking-tight;
+  }
+
+  .btn-dark {
+    @apply bg-[#1C1917] text-white font-black py-5 px-10 rounded-[30px] shadow-2xl shadow-stone-200 hover:bg-black hover:scale-[1.05] active:scale-[0.95] transition-all duration-300 flex items-center justify-center gap-3 tracking-tight;
+  }
+
+  /* Neon Glow Text */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+  }
+
+  /* Input Style */
+  .input-premium {
+    @apply w-full p-6 bg-white border-2 border-orange-50 rounded-[28px] outline-none focus:border-[#F43F5E] focus:ring-[6px] focus:ring-rose-500/5 transition-all duration-300 font-bold text-lg text-stone-800 placeholder:text-stone-300 shadow-inner;
   }
 }

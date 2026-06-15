@@ -42,6 +42,12 @@ io.on('connection', (socket) => {
   });
 });
 
+// Export a helper to broadcast orders
+export const broadcastNewOrder = (order: any) => {
+  console.log('Broadcasting new order to delivery_boys room:', order.id);
+  io.to('delivery_boys').emit('new_order', order);
+};
+
 // Root route
 app.get('/', (req, res) => {
   res.send('Mr. Candy Backend API is running');

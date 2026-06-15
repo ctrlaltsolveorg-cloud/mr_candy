@@ -15,6 +15,7 @@ export interface Product {
   wholesaleUnitQty: number;
   unit: string;
   price: number;
+  createdAt?: string;
 }
 
 export interface OrderItem {
@@ -27,13 +28,17 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  customerId: string;
-  customer: User;
+  customerId: string | null;
+  customer: User | null;
   deliveryBoyId: string | null;
   deliveryBoy: User | null;
   status: 'PENDING' | 'ACCEPTED' | 'DELIVERED' | 'CANCELLED';
   otp: string | null;
   totalAmount: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  address: string | null;
+  pincode: string | null;
   items: OrderItem[];
   createdAt: string;
 }

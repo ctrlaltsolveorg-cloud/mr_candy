@@ -1,38 +1,30 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
-import { io } from '../app';
-import { OrderStatus, Role } from '@prisma/client';
+import { io, broadcastNewOrder } from '../app';
 
 interface AuthRequest extends Request {
   user?: {
     id: string;
-    role: Role;
+    role: string;
   };
 }
 
 export const createOrder = async (req: AuthRequest, res: Response) => {
-  const { items, totalAmount, customerId: bodyCustomerId } = req.body;
+  const { items, totalAmount, customerName, customerPhone, address, pincode } = req.body;
   
-  // Use body ID if auth is off, or try to get from user object
-  let customerId = bodyCustomerId || req.user?.id;
-
-  // Fallback for testing if no ID at all
-  if (!customerId) {
-    const firstUser = await prisma.user.findFirst({ where: { role: Role.CUSTOMER } });
-    customerId = firstUser?.id;
-  }
-
-  if (!customerId) return res.status(401).json({ message: 'No customer ID found. Please seed the DB.' });
-
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the order
       const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      // Creating order without strict customerId requirement
       const order = await tx.order.create({
         data: {
-          customerId,
           totalAmount,
-          status: OrderStatus.PENDING,
+          customerName,
+          customerPhone,
+          address,
+          pincode,
+          status: 'PENDING',
           otp,
           items: {
             create: items.map((item: any) => ({
@@ -51,7 +43,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         },
       });
 
-      // 2. Deduct stock
+      // Deduct stock
       for (const item of items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -66,18 +58,23 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       return order;
     });
 
-    // 3. Broadcast to delivery boys
-    io.to('delivery_boys').emit('new_order', result);
+    // Broadcast to delivery boys
+    broadcastNewOrder(result);
 
     res.status(201).json(result);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to create order', error });
+  } catch (error: any) {
+    console.error('Order Creation Failed:', error.message);
+    res.status(500).json({ message: 'Failed to create order', error: error.message });
   }
 };
 
 export const getOrders = async (req: AuthRequest, res: Response) => {
   try {
+    const { customerId } = req.query;
+    const filter = customerId ? { customerId: String(customerId) } : {};
+
     const orders = await prisma.order.findMany({ 
+      where: filter,
       include: { 
         items: { include: { product: true } }, 
         customer: true, 
@@ -86,42 +83,40 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
       orderBy: { createdAt: 'desc' }
     });
     res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders', error });
+  } catch (error: any) {
+    console.error('Fetch Orders Failed:', error.message);
+    res.status(500).json({ message: 'Failed to fetch orders', error: error.message });
   }
 };
 
 export const acceptOrder = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { deliveryBoyId: bodyDeliveryBoyId } = req.body;
   
-  let deliveryBoyId = bodyDeliveryBoyId || req.user?.id;
-
-  // Fallback if no ID
-  if (!deliveryBoyId) {
-    const firstDelivery = await prisma.user.findFirst({ where: { role: Role.DELIVERY } });
-    deliveryBoyId = firstDelivery?.id;
-  }
-
-  if (!deliveryBoyId) return res.status(400).json({ message: 'No delivery boy ID found.' });
-
   try {
+    // For testing, pick any delivery boy from DB
+    const deliveryBoy = await prisma.user.findFirst({ where: { role: 'DELIVERY' } });
+    
+    if (!deliveryBoy) {
+        return res.status(400).json({ message: 'No delivery boy found in DB.' });
+    }
+
     const order = await prisma.order.findUnique({ where: { id } });
-    if (!order || order.status !== OrderStatus.PENDING) {
+    if (!order || order.status !== 'PENDING') {
       return res.status(400).json({ message: 'Order not available' });
     }
 
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
-        deliveryBoyId,
-        status: OrderStatus.ACCEPTED,
+        deliveryBoyId: deliveryBoy.id,
+        status: 'ACCEPTED',
       },
     });
 
     res.json(updatedOrder);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to accept order', error });
+  } catch (error: any) {
+    console.error('Accept Order Failed:', error.message);
+    res.status(500).json({ message: 'Failed to accept order', error: error.message });
   }
 };
 
@@ -142,12 +137,13 @@ export const completeOrder = async (req: AuthRequest, res: Response) => {
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
-        status: OrderStatus.DELIVERED,
+        status: 'DELIVERED',
       },
     });
 
     res.json(updatedOrder);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to complete order', error });
+  } catch (error: any) {
+    console.error('Complete Order Failed:', error.message);
+    res.status(500).json({ message: 'Failed to complete order', error: error.message });
   }
 };

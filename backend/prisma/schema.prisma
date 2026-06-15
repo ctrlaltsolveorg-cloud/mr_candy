@@ -41,13 +41,21 @@ model Product {
 
 model Order {
   id            String      @id @default(uuid())
-  customerId    String
-  customer      User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  // Making customerId optional to allow orders without strict login during testing
+  customerId    String?
+  customer      User?       @relation("CustomerOrders", fields: [customerId], references: [id])
   deliveryBoyId String?
   deliveryBoy   User?       @relation("DeliveryBoyOrders", fields: [deliveryBoyId], references: [id])
   status        String      @default("PENDING")
   otp           String?
   totalAmount   Float
+  
+  // Customer Details for Order
+  customerName  String?
+  customerPhone String?
+  address       String?
+  pincode       String?
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   items         OrderItem[]

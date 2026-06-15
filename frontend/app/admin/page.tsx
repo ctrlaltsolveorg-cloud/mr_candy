@@ -1,31 +1,38 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Product } from '@/types';
-import { Plus, Edit2, Save, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Save, X, Image as ImageIcon, Package, Home, LayoutGrid, DollarSign, Archive, ArrowRight, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function AdminPanel() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({});
   const [showAddForm, setShowAddForm] = useState(false);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
   const fetchProducts = async () => {
-    const { data } = await api.get('/products');
-    setProducts(data);
+    try {
+      const { data } = await api.get('/products');
+      // Sort newest first based on createdAt
+      const sorted = [...data].sort((a, b) => 
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      setProducts(sorted);
+    } catch (error) { toast.error('Failed to load catalog'); }
   };
 
   const handleEdit = (product: Product) => {
     setEditingId(product.id);
     setFormData(product);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSave = async () => {
@@ -35,141 +42,127 @@ export default function AdminPanel() {
       data.append('wholesaleUnitQty', String(formData.wholesaleUnitQty || 1));
       data.append('price', String(formData.price || 0));
       data.append('unit', formData.unit || 'pcs');
-      if (selectedFile) {
-        data.append('photo', selectedFile);
-      }
+      if (selectedFile) data.append('photo', selectedFile);
 
       if (editingId) {
-        await api.put(`/products/${editingId}`, data, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Product updated!');
+        await api.put(`/products/${editingId}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        toast.success('Catalog updated!');
       } else {
-        await api.post('/products', data, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Product added!');
+        await api.post('/products', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        toast.success('New item launched!');
         setShowAddForm(false);
       }
       setEditingId(null);
       setFormData({});
       setSelectedFile(null);
       fetchProducts();
-    } catch (error) {
-      toast.error('Operation failed');
-    }
+    } catch (error) { toast.error('Operation failed'); }
   };
 
   const renderPhoto = (url: string | null) => {
-    if (!url) return <ImageIcon size={20} className="text-gray-900" />;
+    if (!url) return <ImageIcon size={24} className="text-stone-300" />;
     const fullUrl = url.startsWith('http') ? url : `http://localhost:4000${url}`;
     return <img src={fullUrl} className="w-full h-full object-cover" />;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 text-gray-900">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black text-gray-900">Admin Control</h1>
-        <button
-          onClick={() => { setShowAddForm(true); setFormData({ wholesaleUnitQty: 1, price: 0, unit: 'pcs' }); }}
-          className="bg-blue-700 text-white px-6 py-3 rounded-xl font-black flex items-center shadow-lg hover:bg-blue-800 transition-colors"
-        >
-          <Plus className="mr-2" /> Naya Samaan
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#F8FAFC] p-6 sm:p-12 text-[#1C1917]">
+      <header className="max-w-7xl mx-auto mb-16 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+        <div>
+            <div className="flex items-center gap-4 mb-4">
+                <motion.button whileHover={{ scale: 1.1 }} onClick={() => router.push('/')} className="p-4 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-stone-900"><Home size={24} strokeWidth={2.5}/></motion.button>
+                <span className="bg-indigo-50 text-indigo-600 px-5 py-2 rounded-full text-[10px] font-black tracking-[0.2em] uppercase border border-indigo-100">Control Center</span>
+            </div>
+            <h1 className="text-6xl font-black tracking-tighter leading-none mb-2">Shop <span className="text-indigo-600">Admin</span></h1>
+            <p className="text-lg font-bold text-slate-400">Advanced catalog & operations management.</p>
+        </div>
+        <div className="flex gap-4 w-full md:w-auto">
+            <button onClick={() => router.push('/admin/orders')} className="flex-1 md:flex-none bg-white text-stone-900 px-8 py-5 rounded-[28px] font-black flex items-center justify-center border-2 border-slate-100 shadow-xl shadow-slate-200/40 hover:bg-[#1C1917] hover:text-white hover:border-[#1C1917] transition-all">
+                <Package className="mr-3 text-[#F43F5E]" size={24} strokeWidth={2.5} /> VIEW ORDERS
+            </button>
+            <button onClick={() => { setShowAddForm(true); setFormData({ wholesaleUnitQty: 1, price: 0, unit: 'pcs' }); }} className="flex-1 md:flex-none bg-[#1C1917] text-white px-8 py-5 rounded-[28px] font-black flex items-center justify-center shadow-2xl shadow-stone-300 hover:bg-indigo-600 transition-all">
+                <Plus className="mr-3" size={24} strokeWidth={3} /> NEW SKU
+            </button>
+        </div>
+      </header>
 
-      <div className="bg-white rounded-3xl shadow-md border border-gray-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-100 border-b-2 border-gray-200">
-            <tr>
-              <th className="p-4 font-black text-gray-900 uppercase text-xs tracking-wider">Samaan</th>
-              <th className="p-4 font-black text-gray-900 uppercase text-xs tracking-wider">Wholesale Unit</th>
-              <th className="p-4 font-black text-gray-900 uppercase text-xs tracking-wider">Price (Retail)</th>
-              <th className="p-4 font-black text-gray-900 uppercase text-xs tracking-wider">Stock</th>
-              <th className="p-4 font-black text-gray-900 uppercase text-xs tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(showAddForm || editingId) && (
-              <tr className="bg-blue-50">
-                <td className="p-4">
-                  <input
-                    placeholder="Name"
-                    value={formData.name || ''}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="p-2 border-2 border-gray-400 rounded w-full mb-2 placeholder:text-gray-600 text-gray-900 font-bold bg-white outline-none focus:border-blue-600"
-                  />
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-[10px] font-black text-gray-800 uppercase tracking-tighter">Product Photo</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => setSelectedFile(e.target.files?.[0] || null)}
-                      className="text-xs text-gray-900 font-bold file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-black file:bg-blue-200 file:text-blue-900 hover:file:bg-blue-300"
-                    />
-                  </div>
-                </td>
-                <td className="p-4">
-                  <input
-                    type="number"
-                    value={formData.wholesaleUnitQty || ''}
-                    onChange={e => setFormData({ ...formData, wholesaleUnitQty: Number(e.target.value) })}
-                    className="p-2 border-2 border-gray-400 rounded w-20 mb-2 text-gray-900 font-bold bg-white"
-                  />
-                  <select
-                    value={formData.unit || 'pcs'}
-                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                    className="p-2 border-2 border-gray-400 rounded w-20 text-gray-900 font-black bg-white"
-                  >
-                    <option value="pcs">pcs</option>
-                    <option value="kg">kg</option>
-                    <option value="doz">doz</option>
-                    <option value="pkt">pkt</option>
-                    <option value="ltr">ltr</option>
-                    <option value="gm">gm</option>
-                  </select>
-                </td>
-                <td className="p-4">
-                  <input
-                    type="number"
-                    value={formData.price || ''}
-                    onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="p-2 border-2 border-gray-400 rounded w-20 text-gray-900 font-bold bg-white"
-                  />
-                </td>
-                <td className="p-4 text-gray-900 font-black">
-                  {editingId ? 'Updating...' : 'Initial: 0'}
-                </td>
-                <td className="p-4">
-                  <div className="flex space-x-2">
-                    <button onClick={handleSave} className="p-2 bg-green-600 text-white rounded shadow-sm hover:bg-green-700"><Save size={18} /></button>
-                    <button onClick={() => { setEditingId(null); setShowAddForm(false); }} className="p-2 bg-gray-800 text-white rounded shadow-sm hover:bg-black"><X size={18} /></button>
-                  </div>
-                </td>
-              </tr>
-            )}
-            {products.map((product) => (
-              <tr key={product.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                <td className="p-4 flex items-center">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg mr-4 flex items-center justify-center overflow-hidden border border-gray-300">
-                    {renderPhoto(product.photoUrl)}
-                  </div>
-                  <span className="font-bold text-gray-900 text-lg">{product.name}</span>
-                </td>
-                <td className="p-4 font-bold text-gray-800 text-base">{product.wholesaleUnitQty} {product.unit}</td>
-                <td className="p-4 font-black text-gray-950 text-base">₹{product.price} / {product.unit}</td>
-                <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-black border-2 ${product.retailStock > 0 ? 'bg-green-100 text-green-900 border-green-200' : 'bg-red-100 text-red-900 border-red-200'}`}>
-                    {product.retailStock} {product.unit}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <button onClick={() => handleEdit(product)} className="p-3 text-blue-700 hover:bg-blue-100 rounded-full transition-colors"><Edit2 size={20} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <AnimatePresence>
+        {(showAddForm || editingId) && (
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-7xl mx-auto mb-16 bg-white p-8 sm:p-12 rounded-[60px] shadow-2xl shadow-indigo-100 border-[6px] border-indigo-50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-16 opacity-5 pointer-events-none rotate-12 text-indigo-600 font-black text-9xl">MOD</div>
+                <div className="flex justify-between items-center mb-12 relative z-10">
+                    <h2 className="text-4xl font-black tracking-tight">{editingId ? 'Edit Product' : 'Create New Entry'}</h2>
+                    <button onClick={() => { setEditingId(null); setShowAddForm(false); }} className="p-4 bg-stone-50 text-stone-900 rounded-[20px] hover:bg-rose-500 hover:text-white transition-all"><X size={24} strokeWidth={3}/></button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12 relative z-10">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="relative"><LayoutGrid className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300" size={20} /><input placeholder="Product Name (e.g. Kurkure)" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-premium pl-16 !py-5" /></div>
+                        <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 hover:border-indigo-400 transition-colors group">
+                            <label className="flex flex-col items-center justify-center cursor-pointer gap-2">
+                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-indigo-600 group-hover:scale-110 transition-transform"><ImageIcon size={24} /></div>
+                                <span className="text-xs font-black text-stone-400 uppercase tracking-widest">{selectedFile ? selectedFile.name : 'Select HD Photo'}</span>
+                                <input type="file" accept="image/*" onChange={e => setSelectedFile(e.target.files?.[0] || null)} className="hidden" />
+                            </label>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        <div className="relative"><Archive className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300" size={20} /><input type="number" placeholder="Batch Qty" value={formData.wholesaleUnitQty || ''} onChange={e => setFormData({ ...formData, wholesaleUnitQty: Number(e.target.value) })} className="input-premium pl-16 !py-5" /></div>
+                        <select value={formData.unit || 'pcs'} onChange={e => setFormData({ ...formData, unit: e.target.value })} className="input-premium appearance-none bg-stone-50 !py-5">
+                            {['pcs', 'kg', 'doz', 'pkt', 'ltr', 'gm'].map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
+                        </select>
+                    </div>
+                    <div className="space-y-6">
+                        <div className="relative"><DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300" size={20} /><input type="number" placeholder="Retail Price" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="input-premium pl-16 !py-5" /></div>
+                        <button onClick={handleSave} className="w-full btn-premium !py-5 rounded-[28px] h-[72px]">SAVE CHANGES <ArrowRight size={20} strokeWidth={3}/></button>
+                    </div>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="max-w-7xl mx-auto bg-white rounded-[60px] shadow-2xl shadow-slate-200/50 border-4 border-white overflow-hidden">
+        <div className="p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+            <h2 className="text-2xl font-black tracking-tight">Active Catalog</h2>
+            <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} /><input placeholder="Quick filter..." className="pl-10 pr-4 py-2 bg-white rounded-xl border border-slate-200 outline-none text-xs font-bold w-64 focus:border-indigo-400 transition-all shadow-sm" /></div>
+        </div>
+        <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-white border-b-2 border-slate-100">
+                <tr>
+                  <th className="p-8 font-black text-slate-300 uppercase text-[10px] tracking-[0.2em]">Product</th>
+                  <th className="p-8 font-black text-slate-300 uppercase text-[10px] tracking-[0.2em]">Inventory Scale</th>
+                  <th className="p-8 font-black text-slate-300 uppercase text-[10px] tracking-[0.2em]">Market Price</th>
+                  <th className="p-8 font-black text-slate-300 uppercase text-[10px] tracking-[0.2em]">Current Status</th>
+                  <th className="p-8 font-black text-slate-300 uppercase text-[10px] tracking-[0.2em]">Operations</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {products.map((product) => (
+                  <tr key={product.id} className="group hover:bg-indigo-50/30 transition-colors">
+                    <td className="p-8">
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                          {renderPhoto(product.photoUrl)}
+                        </div>
+                        <div><p className="font-black text-slate-900 text-xl tracking-tight leading-none mb-1">{product.name}</p><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none">Standard SKU</p></div>
+                      </div>
+                    </td>
+                    <td className="p-8"><div className="bg-slate-100 inline-flex items-center px-4 py-2 rounded-xl border border-slate-200 font-black text-slate-600 text-sm">{product.wholesaleUnitQty} {product.unit.toUpperCase()}</div></td>
+                    <td className="p-8"><p className="text-2xl font-black text-stone-900 leading-none mb-1">₹{product.price}</p><p className="text-[10px] font-bold text-slate-300 uppercase">Rate per {product.unit}</p></td>
+                    <td className="p-8">
+                      <div className={`inline-flex items-center gap-3 px-5 py-2.5 rounded-full text-xs font-black tracking-widest border-2 ${product.retailStock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
+                        <div className={`w-2 h-2 rounded-full ${product.retailStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                        {product.retailStock} {product.unit.toUpperCase()}
+                      </div>
+                    </td>
+                    <td className="p-8">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleEdit(product)} className="p-4 text-indigo-600 hover:bg-white hover:shadow-xl rounded-2xl transition-all border border-transparent hover:border-indigo-100"><Edit2 size={24} strokeWidth={2.5} /></motion.button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        </div>
       </div>
     </div>
   );

@@ -194,32 +194,39 @@ export default function UserShop() {
     }
 
     return (
-      <div className="min-h-screen bg-[#FFFBF7] flex flex-col items-center p-4 sm:p-10">
-        <div className="w-full max-w-3xl bg-white rounded-[50px] shadow-2xl shadow-orange-100/50 border-4 border-white overflow-hidden flex flex-col mt-10">
-            <div className="p-8 sm:p-12 text-center bg-gradient-to-b from-emerald-50 to-white">
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
-                <CheckCircle size={48} strokeWidth={2.5} />
+      <div className="min-h-screen bg-[#FFFBF7] flex flex-col items-center">
+        {/* Full width header instead of trapped div */}
+        <div className="w-full bg-white border-b-2 border-orange-50 shadow-sm p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-6">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-[24px] flex items-center justify-center shadow-inner border-2 border-white flex-shrink-0">
+                    <CheckCircle size={40} strokeWidth={2.5} />
                 </motion.div>
-                <h1 className="text-4xl font-black text-[#1C1917] mb-2 tracking-tighter">Order Confirmed!</h1>
-                <p className="text-[#F43F5E] font-black text-xl tracking-tight">{trackingStatus}</p>
-            </div>
-
-            <div className="px-8 sm:px-12 py-6 border-b-2 border-stone-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-white">
-                <div className="w-full md:w-auto">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 mb-2">Secure Delivery OTP</p>
-                    <div className="bg-gradient-to-br from-[#F43F5E] to-[#FB923C] px-10 py-4 rounded-[24px] shadow-lg shadow-rose-200 text-5xl font-black text-white tracking-widest inline-block">
-                        {displayOrder.otp}
-                    </div>
-                    <p className="text-xs font-bold text-stone-400 mt-3">Show to rider at delivery</p>
+                <div>
+                    <h1 className="text-3xl sm:text-4xl font-black text-[#1C1917] mb-1 tracking-tighter">Order Confirmed!</h1>
+                    <p className="text-[#F43F5E] font-black text-lg tracking-tight">{trackingStatus}</p>
                 </div>
-                
-                {displayOrder.status !== 'DELIVERED' && (
-                <div className="w-full md:w-1/2">
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-stone-400 mb-2">
-                        <span>Packing Progress</span>
-                        <span>{packedItemsCount} / {totalItems} Packed</span>
+            </div>
+            <button onClick={() => setOrderComplete(null)} className="w-full sm:w-auto btn-dark py-4 px-8 text-lg rounded-[20px]">Return to Shop</button>
+        </div>
+
+        <div className="w-full max-w-7xl mx-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 flex-1">
+            {/* Left Column: Tracking & OTP */}
+            <div className="flex flex-col gap-6">
+                <div className="bg-white p-6 sm:p-8 rounded-[32px] border-2 border-orange-50 shadow-lg shadow-orange-100/30">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4 text-center">Secure Delivery OTP</p>
+                    <div className="bg-gradient-to-br from-[#F43F5E] to-[#FB923C] w-full py-6 rounded-[24px] shadow-lg shadow-rose-200 text-center">
+                        <span className="text-6xl sm:text-7xl font-black text-white tracking-[0.2em]">{displayOrder.otp}</span>
                     </div>
-                    <div className="w-full h-4 bg-stone-100 rounded-full overflow-hidden border border-stone-200 shadow-inner">
+                    <p className="text-xs font-bold text-stone-400 mt-4 text-center">Show this code to the rider at delivery</p>
+                </div>
+
+                {displayOrder.status !== 'DELIVERED' && (
+                <div className="bg-white p-6 sm:p-8 rounded-[32px] border-2 border-orange-50 shadow-lg shadow-orange-100/30">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-stone-400 mb-3">
+                        <span>Packing Progress</span>
+                        <span className="text-[#F43F5E]">{packedItemsCount} / {totalItems} Packed</span>
+                    </div>
+                    <div className="w-full h-4 bg-stone-50 rounded-full overflow-hidden border border-stone-200 shadow-inner">
                         <motion.div 
                             initial={{ width: 0 }} 
                             animate={{ width: `${progressPercentage}%` }} 
@@ -231,36 +238,33 @@ export default function UserShop() {
                 )}
             </div>
 
-            <div className="p-8 sm:p-12 bg-stone-50/50 flex-1">
-                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-6">Order Summary</p>
-                <div className="space-y-3 mb-8">
+            {/* Right Column: Order Summary */}
+            <div className="bg-white p-6 sm:p-8 rounded-[32px] border-2 border-orange-50 shadow-lg shadow-orange-100/30 flex flex-col">
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-4">Order Summary</p>
+                <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {displayOrder.items?.map(item => (
-                        <div key={item.id} className={`flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border transition-colors ${item.isPacked ? 'border-emerald-100' : 'border-stone-100'}`}>
-                            <div className="flex items-center gap-4">
+                        <div key={item.id} className={`flex justify-between items-center bg-stone-50/50 p-3 rounded-2xl border transition-colors ${item.isPacked ? 'border-emerald-100 bg-emerald-50/30' : 'border-stone-100'}`}>
+                            <div className="flex items-center gap-3">
                                 {item.isPacked ? (
-                                    <CheckCircle size={20} className="text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+                                    <CheckCircle size={18} className="text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
                                 ) : (
-                                    <div className="w-5 h-5 rounded-full border-[3px] border-stone-200 flex-shrink-0" />
+                                    <div className="w-4 h-4 rounded-full border-[3px] border-stone-200 flex-shrink-0" />
                                 )}
-                                <div>
-                                    <p className={`font-black text-lg leading-tight ${item.isPacked ? 'text-emerald-700' : 'text-[#1C1917]'}`}>
+                                <div className="min-w-0">
+                                    <p className={`font-black text-base leading-tight truncate ${item.isPacked ? 'text-emerald-700' : 'text-[#1C1917]'}`}>
                                         {item.product?.name || 'Item'}
                                     </p>
-                                    <p className="text-xs font-bold text-stone-400">{item.quantity} {item.product?.unit}</p>
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{item.quantity} {item.product?.unit}</p>
                                 </div>
                             </div>
-                            <span className="font-black text-[#1C1917] text-lg">₹{item.price}</span>
+                            <span className="font-black text-[#1C1917] text-lg pl-2">₹{item.price}</span>
                         </div>
                     ))}
                 </div>
-                <div className="flex justify-between items-end border-t-2 border-stone-200 pt-6">
-                    <span className="text-stone-400 font-black uppercase tracking-[0.2em] text-sm">Total Paid</span>
+                <div className="flex justify-between items-end border-t-2 border-stone-100 pt-4 mt-4">
+                    <span className="text-stone-400 font-black uppercase tracking-[0.2em] text-xs">Total Paid</span>
                     <span className="text-4xl font-black text-[#1C1917]">₹{displayOrder.totalAmount}</span>
                 </div>
-            </div>
-
-            <div className="p-8 sm:p-12 bg-white">
-                <button onClick={() => setOrderComplete(null)} className="w-full btn-dark py-6 text-2xl rounded-[32px]">Return to Shop</button>
             </div>
         </div>
       </div>
